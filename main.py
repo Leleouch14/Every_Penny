@@ -20,13 +20,13 @@ def init_db():
 def main(page: ft.Page):
     page.title = "Every Penny"
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 20
+    page.padding = ft.Padding.only(left=20, right=20, top=40, bottom=20)
     page.scroll = ft.ScrollMode.AUTO
 
     conn = init_db()
     body_container = ft.Container(expand=True)
 
-    # 1. Build the DataTable from SQLite rows
+    # 1. build the DataTable from SQLite rows
     def get_expenses_table():
         cursor = conn.cursor()
         cursor.execute("SELECT id, Date, Note, Amount FROM expenses ORDER BY id DESC")
@@ -35,7 +35,7 @@ def main(page: ft.Page):
         if not records:
             return ft.Text("No transactions logged yet.", size=16, color=ft.Colors.GREY_500)
 
-        return ft.DataTable(
+        table = ft.DataTable(
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=10,
             heading_row_color=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -49,7 +49,7 @@ def main(page: ft.Page):
                 ft.DataRow(
                     cells=[
                         ft.DataCell(ft.Text(f"#{row[0]}")),
-                        ft.DataCell(ft.Text(row[1])), # This renders the Date
+                        ft.DataCell(ft.Text(row[1])), # this renders the Date
                         ft.DataCell(ft.Text(row[2])),
                         ft.DataCell(
                             ft.Text(
@@ -63,6 +63,7 @@ def main(page: ft.Page):
                 for row in records
             ],
         )
+        return ft.Row(controls=[table], scroll=ft.ScrollMode.AUTO)
     # 5. Earning Table:
     def get_earnings_tables():
         cursor = conn.cursor()
@@ -72,7 +73,7 @@ def main(page: ft.Page):
         if not records:
             return ft.Text("No transactions logged yet.", size=16, color=ft.Colors.GREY_500)
 
-        return ft.DataTable(
+        table = ft.DataTable(
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=10,
             heading_row_color=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -98,6 +99,8 @@ def main(page: ft.Page):
                 for row in records
             ],
         )
+        return ft.Row(controls=[table], scroll=ft.ScrollMode.AUTO)
+
     #sql-qury total
     def get_total():
         cursor = conn.cursor()
@@ -193,9 +196,7 @@ def main(page: ft.Page):
                     selected_index=0,
                     length=2,
                     animation_duration=300,
-                    expand=True,
                     content=ft.Column(
-                        expand=True,
                         controls=[
                             ft.TabBar(
                                 tabs=[
@@ -203,18 +204,20 @@ def main(page: ft.Page):
                                     ft.Tab(label="Monthly"),
                                 ],
                             ),
-                            ft.TabBarView(
-                                expand=True,
-                                controls=[
-                                    ft.Container(
-                                        content=build_summary_table(daily_summary, "Day of Month"),
-                                        padding=15,
-                                    ),
-                                    ft.Container(
-                                        content=build_summary_table(monthly_summary, "Month"),
-                                        padding=15,
-                                    ),
-                                ],
+                            ft.Container(
+                                height=400,
+                                content=ft.TabBarView(
+                                    controls=[
+                                        ft.Container(
+                                            content=build_summary_table(daily_summary, "Day of Month"),
+                                            padding=15,
+                                        ),
+                                        ft.Container(
+                                            content=build_summary_table(monthly_summary, "Month"),
+                                            padding=15,
+                                        ),
+                                    ],
+                                ),
                             ),
                         ],
                     ),
@@ -252,7 +255,7 @@ def main(page: ft.Page):
                 ft.Row(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        ft.Text("Earnings Ledger", size=22, weight=ft.Colors.GREEN_400),
+                        ft.Text("Earnings Ledger", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_400),
                         ft.ElevatedButton(
                             "Log Earnings",
                             icon=ft.Icons.ADD,
