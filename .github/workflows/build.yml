@@ -5,6 +5,11 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
+    paths:
+      - 'main.py'
+      - '.github/workflows/build.yml'
 
 jobs:
   build:
@@ -33,7 +38,16 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # Decode the permanent release keystore from the repo secret
+      - name: Restore Android signing keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $RUNNER_TEMP/release.jks
+
       - name: Build APK
+        env:
+          FLET_ANDROID_SIGNING_KEY_STORE: ${{ runner.temp }}/release.jks
+          FLET_ANDROID_SIGNING_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          FLET_ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          FLET_ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: yes | flet build apk --product "Every Penny" --org "com.param.everypenny"
 
       - name: Upload APK as workflow artifact
