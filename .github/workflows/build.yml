@@ -34,12 +34,9 @@ jobs:
       - run: pip install -r requirements.txt
 
       # Decode the permanent release keystore from the repo secret securely
+      # Decode the permanent release keystore from the repo secret
       - name: Restore Android signing keystore
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          TEMP_DIR: ${{ runner.temp }}
-        run: |
-          echo "\(KEYSTORE_B64" | base64 --decode > "\)TEMP_DIR/release.jks"
+        run: echo "\({{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d >\)RUNNER_TEMP/release.jks/release.jks"
 
       - name: Build APK
         env:
