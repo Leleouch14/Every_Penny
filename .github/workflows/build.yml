@@ -35,7 +35,7 @@ jobs:
 
       # Decode the permanent release keystore from the repo secret
       - name: Restore Android signing keystore
-        run: echo "\({{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d >\)RUNNER_TEMP/release.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d >$RUNNER_TEMP/release.jks
 
       - name: Build APK
         env:
