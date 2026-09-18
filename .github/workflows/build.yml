@@ -26,6 +26,13 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      # The runner ships with an Android SDK, but its pre-accepted licenses
+      # don't always cover newer SDK components Gradle pulls in during the
+      # build. Accepting all of them up front avoids a LicenceNotAccepted
+      # failure partway through.
+      - name: Accept Android SDK licenses
+        run: yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Install Python and Flet
         uses: actions/setup-python@v5
         with:
@@ -35,7 +42,7 @@ jobs:
 
       # Decode the permanent release keystore from the repo secret
       - name: Restore Android signing keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d >$RUNNER_TEMP/release.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $RUNNER_TEMP/release.jks
 
       - name: Build APK
         env:
@@ -57,3 +64,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: build/apk/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
