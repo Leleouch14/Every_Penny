@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Every Penny</string>
+    <string name="title_activity_main">Every Penny</string>
+    <string name="package_name">com.everypenny.app</string>
+    <string name="custom_url_scheme">com.everypenny.app</string>
+</resources>

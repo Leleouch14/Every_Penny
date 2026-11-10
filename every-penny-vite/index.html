@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Every Penny Counts</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-app: #ECE4DC;             /* Dimmer, warmer toasted oat background */
+        --bg-surface: #F4EFEA;         /* Richer warm milk surface */
+        --bg-surface-subtle: #E2D7CC;  /* Deeper tan inner wells */
+        --border-subtle: #D4C5B9;      /* Darker, softer contrast borders */
+        --border-strong: #BFA896;
+        
+        --text-primary: #2D2421;       /* Dark cocoa umber */
+        --text-secondary: #7A6962;
+        --text-muted: #8C7870;
+        
+        --accent-primary: #BF5B3E;     /* Warm terracotta */
+        --accent-income: #437158;      /* Eucalyptus green */
+        --accent-expense: #BF5B3E;     /* Rich terracotta */
+        
+        --tag-bg: #E8DFD5;
+        --tag-text: #2D2421;
+        --card-shadow: 0 4px 18px -2px rgba(45, 36, 33, 0.08);
+      }
+
+      body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: var(--bg-app);
+        color: var(--text-primary);
+      }
+
+      @keyframes revolve {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes counter-revolve {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(-360deg); }
+      }
+      .orbit-ring {
+        animation: revolve 30s linear infinite;
+      }
+      .orbit-ring:hover {
+        animation-play-state: paused;
+      }
+      .tag-item {
+        animation: counter-revolve 30s linear infinite;
+      }
+      .orbit-ring:hover .tag-item {
+        animation-play-state: paused;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col items-center justify-start pb-28">
+    <!-- Header -->
+    <header class="w-full max-w-md p-5 flex justify-between items-center border-b border-[#D4C5B9] bg-[#F4EFEA]/90 backdrop-blur sticky top-0 z-10 shadow-sm">
+      <div>
+        <h1 id="headerTitle" class="text-xl font-bold text-[#BF5B3E]">Every Penny</h1>
+        <p id="headerSubtitle" class="text-xs text-[#7A6962]">Smart Expense Tracker</p>
+      </div>
+      <div id="headerActions" class="flex gap-2">
+        <button onclick="openModal('earning')" class="bg-[#437158] text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm hover:bg-[#355a45] transition">+ Income</button>
+        <button onclick="openModal('expense')" class="bg-[#BF5B3E] text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm hover:bg-[#a84d33] transition">+ Expense</button>
+      </div>
+    </header>
+
+    <!-- PAGE 1: HOME VIEW -->
+    <main id="pageHome" class="w-full max-w-md p-4 flex flex-col gap-5">
+      <!-- Balance Summary Card -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-5 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)] flex flex-col gap-4">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-medium text-[#7A6962] uppercase tracking-wider">Net Balance</span>
+          <span id="netBalance" class="text-2xl font-bold text-[#2D2421]">₹0.00</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-[#D4C5B9]">
+          <div class="flex flex-col">
+            <span class="text-xs text-[#7A6962]">Total Income</span>
+            <span id="totalIncome" class="text-base font-semibold text-[#437158]">₹0.00</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xs text-[#7A6962]">Total Expenses</span>
+            <span id="totalExpense" class="text-base font-semibold text-[#BF5B3E]">₹0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Budget Progress Bar -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-4 flex flex-col gap-2 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)]">
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-[#7A6962] font-medium">Monthly Budget (Limit: <span id="budgetLimitText" class="text-[#2D2421] cursor-pointer hover:text-[#BF5B3E] underline font-semibold" onclick="editBudget()">₹10,000</span>)</span>
+          <span id="budgetSpentText" class="text-[#2D2421] font-semibold">₹0 / ₹10,000</span>
+        </div>
+        <div class="w-full bg-[#E2D7CC] rounded-full h-2 overflow-hidden">
+          <div id="budgetBar" class="bg-[#437158] h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-4 flex flex-col gap-3 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)]">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <h2 id="chartTitle" class="text-xs font-semibold text-[#7A6962] uppercase tracking-wider">Daily Expenses Overview</h2>
+          <div class="flex gap-1 bg-[#ECE4DC] p-0.5 rounded-lg border border-[#D4C5B9] text-[10px]">
+            <button onclick="switchChartMode('daily')" id="modeDaily" class="px-2 py-1 rounded-md font-semibold bg-[#BF5B3E] text-white transition">Daily</button>
+            <button onclick="switchChartMode('monthly')" id="modeMonthly" class="px-2 py-1 rounded-md font-semibold text-[#7A6962] transition">Monthly</button>
+          </div>
+        </div>
+        <div class="flex justify-center gap-1 bg-[#ECE4DC] p-0.5 rounded-lg border border-[#D4C5B9] text-[10px]">
+          <button onclick="switchChartType('expense')" id="btnChartExpense" class="flex-1 py-1 rounded-md font-semibold bg-[#BF5B3E] text-white transition">Expenses</button>
+          <button onclick="switchChartType('earnings')" id="btnChartEarnings" class="flex-1 py-1 rounded-md font-semibold text-[#7A6962] transition">Earnings</button>
+          <button onclick="switchChartType('comparison')" id="btnChartComparison" class="flex-1 py-1 rounded-md font-semibold text-[#7A6962] transition">Comparison</button>
+        </div>
+        <div class="relative h-48 w-full flex items-center justify-center">
+          <canvas id="expenseChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Interactive Tag Wheel Section -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-5 flex flex-col items-center gap-6 relative overflow-hidden shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)]">
+        <div class="w-full flex justify-between items-center">
+          <h2 class="text-xs font-semibold text-[#7A6962] uppercase tracking-wider">Circular Tag Wheel</h2>
+          <span class="text-[10px] text-[#437158] bg-[#437158]/15 px-2 py-0.5 rounded-full font-medium">Interactive Orbit</span>
+        </div>
+
+        <!-- Circular Wheel Container -->
+        <div class="relative w-72 h-72 my-6 flex items-center justify-center">
+          <!-- Center Core (Total Expense) -->
+          <div class="absolute w-24 h-24 rounded-full bg-[#ECE4DC] border border-[#BFA896] flex flex-col items-center justify-center text-center shadow-inner z-10">
+            <span class="text-[10px] text-[#7A6962] uppercase">Spent</span>
+            <span id="centerSpent" class="text-xs font-bold text-[#BF5B3E]">₹0</span>
+          </div>
+
+          <!-- Orbiting Tags Ring -->
+          <div class="absolute w-full h-full orbit-ring">
+            <!-- Tag 1: Food (0 deg) -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4">
+              <div onclick="filterByTag('Food')" class="tag-item bg-[#F4EFEA] border border-[#BF5B3E]/50 px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-110 transition whitespace-nowrap">
+                <span class="text-xs">🍕</span>
+                <span class="text-[11px] font-semibold text-[#2D2421]">Food</span>
+              </div>
+            </div>
+
+            <!-- Tag 2: Travel (60 deg) -->
+            <div class="absolute top-[25%] right-[2%]">
+              <div onclick="filterByTag('Travel')" class="tag-item bg-[#F4EFEA] border border-[#D4C5B9] px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-110 transition whitespace-nowrap">
+                <span class="text-xs">🚆</span>
+                <span class="text-[11px] font-medium text-[#7A6962]">Travel</span>
+              </div>
+            </div>
+
+            <!-- Tag 3: Bills (120 deg) -->
+            <div class="absolute bottom-[25%] right-[2%]">
+              <div onclick="filterByTag('Bills')" class="tag-item bg-[#F4EFEA] border border-[#D4C5B9] px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-110 transition whitespace-nowrap">
+                <span class="text-xs">💡</span>
+                <span class="text-[11px] font-medium text-[#7A6962]">Bills</span>
+              </div>
+            </div>
+
+            <!-- Tag 4: Gaming (180 deg) -->
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-4">
+              <div onclick="filterByTag('Gaming')" class="tag-item bg-[#F4EFEA] border border-[#D4C5B9] px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-110 transition whitespace-nowrap">
+                <span class="text-xs">🎮</span>
+                <span class="text-[11px] font-medium text-[#7A6962]">Gaming</span>
+              </div>
+            </div>
+
+            <!-- Tag 5: Stationary (240 deg) -->
+            <div class="absolute bottom-[25%] left-[2%]">
+              <div onclick="filterByTag('Stationary')" class="tag-item bg-[#F4EFEA] border border-[#D4C5B9] px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-110 transition whitespace-nowrap">
+                <span class="text-xs">📚</span>
+                <span class="text-[11px] font-medium text-[#7A6962]">Stationary</span>
+              </div>
+            </div>
+
+            <!-- Tag 6: Custom (300 deg) -->
+            <div class="absolute top-[25%] left-[2%]">
+              <div onclick="filterByTag('General')" class="tag-item bg-[#F4EFEA] border border-[#437158]/50 px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-110 transition whitespace-nowrap">
+                <span class="text-xs">🏷️</span>
+                <span class="text-[11px] font-semibold text-[#437158]">General</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#8C7870] text-center">Tap any tag to filter transactions or log expenses instantly.</p>
+      </div>
+
+      <!-- Transactions Feed -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xs font-semibold text-[#7A6962] uppercase tracking-wider">Recent Transactions</h2>
+          <div class="flex flex-wrap gap-1 bg-[#F4EFEA] p-1 rounded-lg border border-[#D4C5B9] text-xs shadow-sm">
+            <button onclick="setFilter('all')" id="filterAll" class="px-2.5 py-1 rounded-md bg-[#BF5B3E] text-white transition font-medium">All</button>
+            <button onclick="setFilter('expense')" id="filterExpense" class="px-2.5 py-1 rounded-md text-[#7A6962] hover:text-[#2D2421] transition">Expenses</button>
+            <button onclick="setFilter('earning')" id="filterEarnings" class="px-2.5 py-1 rounded-md text-[#7A6962] hover:text-[#2D2421] transition">Income</button>
+          </div>
+        </div>
+        <div id="transactionList" class="flex flex-col gap-2.5">
+          <!-- Dynamic Items -->
+        </div>
+      </div>
+    </main>
+
+    <!-- PAGE 2: SPLITS VIEW (Splitwise Friend-to-Friend) -->
+    <main id="pageSplits" class="w-full max-w-md p-4 flex flex-col gap-5 hidden">
+      <!-- Summary Card: To Pay vs To Receive -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-5 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)] flex flex-col gap-4">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-medium text-[#7A6962] uppercase tracking-wider">Splits Net Position</span>
+          <span id="splitNetBalance" class="text-xl font-bold text-[#2D2421]">₹0.00</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-[#D4C5B9]">
+          <div class="flex flex-col">
+            <span class="text-xs text-[#7A6962]">You Receive</span>
+            <span id="totalReceive" class="text-base font-semibold text-[#437158]">₹0.00</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xs text-[#7A6962]">You Pay</span>
+            <span id="totalPay" class="text-base font-semibold text-[#BF5B3E]">₹0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Splits Comparison Chart -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-4 flex flex-col gap-3 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)]">
+        <h2 class="text-xs font-semibold text-[#7A6962] uppercase tracking-wider">Pay vs Receive Comparison</h2>
+        <div class="relative h-48 w-full flex items-center justify-center">
+          <canvas id="splitsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Add Split Button & Form Card -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-5 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)] flex flex-col gap-4">
+        <h3 class="text-sm font-bold text-[#2D2421]">🤝 Add Friend Split</h3>
+        <form id="splitForm" onsubmit="handleSplitSubmit(event)" class="flex flex-col gap-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-[#7A6962]">Friend's Name</label>
+              <input type="text" id="splitFriend" placeholder="e.g. Rahul" required class="w-full bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] text-xs focus:outline-none focus:border-[#BF5B3E]">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-[#7A6962]">Amount (₹)</label>
+              <input type="number" step="0.01" id="splitAmount" placeholder="0.00" required class="w-full bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] text-xs focus:outline-none focus:border-[#BF5B3E]">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-[#7A6962]">Paid To / Direction</label>
+              <select id="splitDirection" class="bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] text-xs focus:outline-none focus:border-[#BF5B3E]">
+                <option value="them">👉 Paid to Them (You Give)</option>
+                <option value="me">👈 Paid to Me (They Give)</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-[#7A6962]">Category / Note</label>
+              <input type="text" id="splitNote" placeholder="e.g. Dinner, Movie" required class="w-full bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] text-xs focus:outline-none focus:border-[#BF5B3E]">
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-[#BF5B3E] hover:bg-[#a84d33] text-white font-medium py-3 rounded-xl transition text-xs shadow-sm mt-1">Add Split Entry</button>
+        </form>
+      </div>
+
+      <!-- Splits List Feed -->
+      <div class="flex flex-col gap-3">
+        <h2 class="text-xs font-semibold text-[#7A6962] uppercase tracking-wider">Active Friend Splits</h2>
+        <div id="splitsList" class="flex flex-col gap-2.5">
+          <!-- Dynamic Splits -->
+        </div>
+      </div>
+    </main>
+
+    <!-- PAGE 3: CONFIGS VIEW (Import / Export Backups) -->
+    <main id="pageConfigs" class="w-full max-w-md p-4 flex flex-col gap-5 hidden">
+      <!-- Export Card -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-5 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)] flex flex-col gap-4">
+        <h3 class="text-sm font-bold text-[#2D2421]">📤 Export Data (CSV)</h3>
+        <p class="text-xs text-[#7A6962]">Download your application tables as separate CSV backup files.</p>
+        <div class="flex flex-col gap-2 pt-1">
+          <button onclick="exportTable('transactions')" class="w-full bg-[#437158] hover:bg-[#355a45] text-white font-medium py-3 rounded-xl transition text-xs shadow-sm">Export Transactions CSV</button>
+          <button onclick="exportTable('splits')" class="w-full bg-[#437158] hover:bg-[#355a45] text-white font-medium py-3 rounded-xl transition text-xs shadow-sm">Export Splits CSV</button>
+          <button onclick="exportTable('all_json')" class="w-full bg-[#BF5B3E] hover:bg-[#a84d33] text-white font-medium py-3 rounded-xl transition text-xs shadow-sm">Export All Data (JSON)</button>
+        </div>
+      </div>
+
+      <!-- Import Card -->
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl p-5 shadow-[0_4px_18px_-2px_rgba(45,36,33,0.08)] flex flex-col gap-4">
+        <h3 class="text-sm font-bold text-[#2D2421]">📥 Import Data (CSV / JSON)</h3>
+        <p class="text-xs text-[#7A6962]">Upload backup files (CSV or JSON) to restore or merge into your database tables.</p>
+        <div class="flex flex-col gap-3 pt-1">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-[#7A6962]">Select Table Target</label>
+            <select id="importTarget" class="bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] text-xs focus:outline-none focus:border-[#BF5B3E]">
+              <option value="transactions">Transactions Table</option>
+              <option value="splits">Splits Table</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-[#7A6962]">Upload File (.csv, .json)</label>
+            <input type="file" id="importFile" accept=".csv, .json" class="w-full bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-2.5 text-[#2D2421] text-xs focus:outline-none focus:border-[#BF5B3E]">
+          </div>
+          <button onclick="handleFileUpload()" class="w-full bg-[#BF5B3E] hover:bg-[#a84d33] text-white font-medium py-3 rounded-xl transition text-xs shadow-sm mt-1">Import & Adjust Table</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="txnModal" class="fixed inset-0 bg-[#2D2421]/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl w-full max-w-sm p-5 flex flex-col gap-4 shadow-2xl">
+        <h3 id="modalTitle" class="text-base font-bold text-[#2D2421]">Add Transaction</h3>
+        <form id="txnForm" onsubmit="handleFormSubmit(event)" class="flex flex-col gap-3">
+          <input type="hidden" id="txnType">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-[#7A6962]">Amount (₹)</label>
+              <input type="number" step="0.01" id="txnAmount" required class="w-full bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] focus:outline-none focus:border-[#BF5B3E]">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-[#7A6962]">Category / Note</label>
+              <input type="text" id="txnNote" placeholder="e.g. Groceries, Salary" required class="w-full bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] focus:outline-none focus:border-[#BF5B3E]">
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-[#7A6962]">Date</label>
+            <input type="date" id="txnDate" required class="bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] focus:outline-none focus:border-[#BF5B3E]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-[#7A6962]">Category Tag</label>
+            <select id="txnTag" class="bg-[#ECE4DC] border border-[#D4C5B9] rounded-xl p-3 text-[#2D2421] focus:outline-none focus:border-[#BF5B3E]">
+              <option value="Food">🍕 Food</option>
+              <option value="Travel">🚆 Travel</option>
+              <option value="Bills">💡 Bills</option>
+              <option value="Gaming">🎮 Gaming</option>
+              <option value="Stationary">📚 Stationary</option>
+              <option value="General">🏷️ General</option>
+            </select>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="flex-1 bg-[#E2D7CC] hover:bg-[#D4C5B9] text-[#7A6962] font-medium py-3 rounded-xl transition">Cancel</button>
+            <button type="submit" class="flex-1 bg-[#BF5B3E] hover:bg-[#a84d33] text-white font-medium py-3 rounded-xl transition">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Stats Modal / View Overlay -->
+    <div id="statsModal" class="fixed inset-0 bg-[#2D2421]/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+      <div class="bg-[#F4EFEA] border border-[#D4C5B9] rounded-2xl w-full max-w-md p-5 flex flex-col gap-4 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-[#D4C5B9] pb-3">
+          <h3 class="text-base font-bold text-[#2D2421]">📊 Financial Analytics</h3>
+          <button onclick="closeStats()" class="text-[#7A6962] hover:text-[#2D2421] text-sm font-bold">✕</button>
+        </div>
+        <div class="flex flex-col gap-4">
+          <div class="flex bg-[#ECE4DC] p-1 rounded-xl border border-[#D4C5B9] text-xs">
+            <button onclick="switchStatsTab('category')" id="statsTabCategory" class="flex-1 py-2 rounded-lg font-semibold bg-[#BF5B3E] text-white transition">By Category</button>
+            <button onclick="switchStatsTab('trend')" id="statsTabTrend" class="flex-1 py-2 rounded-lg font-semibold text-[#7A6962] transition">Earnings vs Expenses</button>
+          </div>
+          <div class="relative h-64 w-full flex items-center justify-center bg-[#ECE4DC]/50 rounded-xl p-2 border border-[#D4C5B9]">
+            <canvas id="statsModalChart"></canvas>
+          </div>
+          <div id="statsSummaryText" class="text-xs text-[#7A6962] text-center font-medium">
+            <!-- Dynamic stats summary -->
+          </div>
+        </div>
+        <button onclick="closeStats()" class="w-full bg-[#E2D7CC] hover:bg-[#D4C5B9] text-[#7A6962] font-medium py-2.5 rounded-xl transition text-xs">Close</button>
+      </div>
+    </div>
+
+    <!-- Fixed Bottom Navigation Bar -->
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-xs bg-[#F4EFEA]/95 backdrop-blur border border-[#D4C5B9] rounded-full p-2 flex justify-around items-center shadow-2xl z-50">
+      <button onclick="switchPage('home')" id="navHome" class="flex flex-col items-center gap-1 text-[#BF5B3E] px-4 py-1.5 rounded-full bg-[#BF5B3E]/15 text-xs font-semibold transition">
+        <span>🏠</span>
+        <span class="text-[10px]">home</span>
+      </button>
+      <button onclick="switchPage('configs')" id="navConfigs" class="flex flex-col items-center gap-1 text-[#7A6962] px-4 py-1.5 rounded-full hover:text-[#2D2421] text-xs font-semibold transition">
+        <span>⚙️</span>
+        <span class="text-[10px]">configs</span>
+      </button>
+      <button onclick="openModal('expense')" class="w-10 h-10 bg-[#BF5B3E] rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md hover:bg-[#a84d33] transition">
+        +
+      </button>
+      <button onclick="switchPage('splits')" id="navSplits" class="flex flex-col items-center gap-1 text-[#7A6962] px-4 py-1.5 rounded-full hover:text-[#2D2421] text-xs font-semibold transition">
+        <span>🤝</span>
+        <span class="text-[10px]">splits</span>
+      </button>
+      <button onclick="openStats()" class="flex flex-col items-center gap-1 text-[#7A6962] px-4 py-1.5 rounded-full hover:text-[#2D2421] text-xs font-semibold transition">
+        <span>📊</span>
+        <span class="text-[10px]">stats</span>
+      </button>
+    </nav>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Capacitor Android APK
 
 on:
   workflow_dispatch:
@@ -8,59 +8,59 @@ on:
     branches:
       - main
     paths:
-      - 'main.py'
+      - 'every-penny-vite/**'
       - '.github/workflows/build.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # needed to create a Release and upload assets
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java (JDK 17)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Install Python and Flet
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Install Dependencies & Build Web Assets
+        working-directory: ./every-penny-vite
+        run: |
+          npm install
+          npm run build
 
-      - run: pip install -r requirements.txt
+      - name: Sync Capacitor Android Project
+        working-directory: ./every-penny-vite
+        run: |
+          npx cap sync android
 
-      # Decode the permanent release keystore from the repo secret
-      - name: Restore Android signing keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $RUNNER_TEMP/release.jks
-
-      - name: Build APK
-        env:
-          FLET_ANDROID_SIGNING_KEY_STORE: ${{ runner.temp }}/release.jks
-          FLET_ANDROID_SIGNING_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
-          FLET_ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          FLET_ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: yes | flet build apk --product "Every Penny" --org "com.param.everypenny"
+      - name: Build Android Debug / Release APK
+        working-directory: ./every-penny-vite/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: every-penny-apk
-          path: build/apk/**/*.apk
+          name: every-penny-capacitor-apk
+          path: every-penny-vite/android/app/build/outputs/apk/debug/app-debug.apk
 
-      # Only runs when the workflow was triggered by a version tag (e.g. v1.0.0)
       - name: Publish APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/apk/**/*.apk
+          files: every-penny-vite/android/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

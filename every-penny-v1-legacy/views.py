@@ -192,6 +192,7 @@ class AppViews:
         self.page.update()
 
     def show_reports(self, e=None):
+        month_label = datetime.now().strftime("%B %Y")
         daily_summary = reports.get_daily_summary()
         monthly_summary = reports.get_monthly_expenses()
 
@@ -199,7 +200,7 @@ class AppViews:
             if not summary:
                 return ft.Text("No data yet.", size=16, color=ft.Colors.GREY_500)
 
-            return ft.DataTable(
+            table = ft.DataTable(
                 border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
                 border_radius=10,
                 heading_row_color=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -217,6 +218,9 @@ class AppViews:
                     for key, total in summary
                 ],
             )
+            # Vertical scroll so extra rows scroll within the fixed-height
+            # tab area instead of being clipped (which cut the border short).
+            return ft.Column(controls=[table], scroll=ft.ScrollMode.AUTO, expand=True)
 
         self.body_container.content = ft.Column(
             controls=[
@@ -229,7 +233,7 @@ class AppViews:
                         controls=[
                             ft.TabBar(
                                 tabs=[
-                                    ft.Tab(label="Daily"),
+                                    ft.Tab(label=f"Daily ({month_label})"),
                                     ft.Tab(label="Monthly"),
                                 ],
                             ),

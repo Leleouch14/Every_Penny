@@ -1,4 +1,5 @@
 import database
+from datetime import datetime
 
 MONTH_NAMES = {
     "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
@@ -6,10 +7,17 @@ MONTH_NAMES = {
     "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
 }
 
-def get_daily_summary():
+def get_daily_summary(month_suffix: str = None):
+    """Sums Amount per day-of-month, restricted to one specific month
+    (defaults to the current month). month_suffix looks like '-09-2026'."""
+    if month_suffix is None:
+        month_suffix = datetime.now().strftime("-%m-%Y")
+
     records = database.fetch_expense_dates_and_amounts()
     totals = {}
     for date_str, amount in records:
+        if not date_str or not date_str.endswith(month_suffix):
+            continue
         try:
             day = date_str.split("-")[0]
         except (AttributeError, IndexError):

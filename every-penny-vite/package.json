@@ -1,0 +1,22 @@
+{
+  "name": "every-penny-vite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "vite": "^8.3.6"
+  },
+  "dependencies": {
+    "@capacitor-community/sqlite": "^8.1.1",
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "chart.js": "^4.6.1"
+  }
+}

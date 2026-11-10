@@ -1,0 +1,63 @@
+{
+  "transactions": [
+    {
+      "id": 1001,
+      "type": "expense",
+      "amount": 50.0,
+      "note": "kinderjoy",
+      "date": "2026-08-23",
+      "tag": "General"
+    },
+    {
+      "id": 2001,
+      "type": "expense",
+      "amount": 90.0,
+      "note": "ocean(spiderman)",
+      "date": "2026-08-23",
+      "tag": "General"
+    },
+    {
+      "id": 3001,
+      "type": "expense",
+      "amount": 200.0,
+      "note": "american mud pi mcd",
+      "date": "2026-09-16",
+      "tag": "General"
+    },
+    {
+      "id": 4001,
+      "type": "expense",
+      "amount": 250.0,
+      "note": "going to thane",
+      "date": "2026-09-16",
+      "tag": "General"
+    },
+    {
+      "id": 5001,
+      "type": "expense",
+      "amount": 220.0,
+      "note": "coming back",
+      "date": "2026-09-16",
+      "tag": "General"
+    },
+    {
+      "id": 6001,
+      "type": "expense",
+      "amount": 200.0,
+      "note": "food",
+      "date": "2026-09-26",
+      "tag": "General"
+    },
+    {
+      "id": 1002,
+      "type": "earning",
+      "amount": 1.0,
+      "note": "papa",
+      "date": "2026-08-23",
+      "tag": "General"
+    }
+  ],
+  "splits": [],
+  "budgetLimit": 10000,
+  "exportDate": "2026-11-11T00:00:00.000Z"
+}

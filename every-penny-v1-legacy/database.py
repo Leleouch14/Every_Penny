@@ -15,7 +15,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
                 Date TEXT, 
                 Amount REAL, 
-                Note TEXT
+                Note TEXT,
+                Tag TEXT
             )
         """)
         conn.execute("""
@@ -23,27 +24,28 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
                 Date TEXT, 
                 Amount REAL, 
-                Note TEXT
+                Note TEXT,
+                Tag TEXT
             )
         """)
     conn.close()
 
-def add_expense(date_str: str, amount: float, note: str):
+def add_expense(date_str: str, amount: float, note: str, tag: str = "General"):
     conn = get_connection()
     with conn:
-        conn.execute("INSERT INTO expenses (Date, Amount, Note) VALUES (?, ?, ?)", (date_str, amount, note))
+        conn.execute("INSERT INTO expenses (Date, Amount, Note, Tag) VALUES (?, ?, ?, ?)", (date_str, amount, note, tag))
     conn.close()
 
-def add_earning(date_str: str, amount: float, note: str):
+def add_earning(date_str: str, amount: float, note: str, tag: str = "General"):
     conn = get_connection()
     with conn:
-        conn.execute("INSERT INTO earnings (Date, Amount, Note) VALUES (?, ?, ?)", (date_str, amount, note))
+        conn.execute("INSERT INTO earnings (Date, Amount, Note, Tag) VALUES (?, ?, ?, ?)", (date_str, amount, note, tag))
     conn.close()
 
 def fetch_expenses():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, Date, Note, Amount FROM expenses ORDER BY id DESC")
+    cursor.execute("SELECT id, Date, Note, Amount, Tag FROM expenses ORDER BY id DESC")
     records = cursor.fetchall()
     conn.close()
     return records
@@ -51,7 +53,7 @@ def fetch_expenses():
 def fetch_earnings():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, Date, Note, Amount FROM earnings ORDER BY id DESC")
+    cursor.execute("SELECT id, Date, Note, Amount, Tag FROM earnings ORDER BY id DESC")
     records = cursor.fetchall()
     conn.close()
     return records
