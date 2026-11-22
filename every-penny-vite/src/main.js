@@ -171,7 +171,11 @@ function renderSplits() {
     });
 }
 // Export & Import Handlers
-window.exportTable = function(tableType) {
+window.exportTable = async function(tableType) {
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+
     if (tableType === 'all_json') {
         const backup = {
             transactions,
@@ -179,49 +183,64 @@ window.exportTable = function(tableType) {
             budgetLimit,
             exportDate: new Date().toISOString()
         };
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `every_penny_full_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        return;
-    }
+        content = JSON.stringify(backup, null, 2);
+        filename = `every_penny_full_backup_${new Date().toISOString().split('T')[0]}.json`;
+        mimeType = 'application/json';
+    } else {
+        let data = [];
+        if (tableType === 'transactions') {
+            data = transactions;
+            filename = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+        } else if (tableType === 'splits') {
+            data = splits;
+            filename = `splits_${new Date().toISOString().split('T')[0]}.csv`;
+        }
 
-    let data = [];
-    let filename = '';
-    if (tableType === 'transactions') {
-        data = transactions;
-        filename = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
-    } else if (tableType === 'splits') {
-        data = splits;
-        filename = `splits_${new Date().toISOString().split('T')[0]}.csv`;
-    }
+        if (data.length === 0) {
+            alert("No data available to export for " + tableType);
+            return;
+        }
 
-    if (data.length === 0) {
-        alert("No data available to export for " + tableType);
-        return;
-    }
+        // Extract headers
+        const keys = Object.keys(data[0]);
+        content = keys.join(',') + '\n';
 
-    // Extract headers
-    const keys = Object.keys(data[0]);
-    let csvContent = keys.join(',') + '\n';
-
-    data.forEach(row => {
-        const values = keys.map(k => {
-            let val = row[k];
-            if (val === undefined || val === null) val = '';
-            val = String(val).replace(/"/g, '""');
-            if (val.includes(',') || val.includes('\n') || val.includes('"')) {
-                val = `"${val}"`;
-            }
-            return val;
+        data.forEach(row => {
+            const values = keys.map(k => {
+                let val = row[k];
+                if (val === undefined || val === null) val = '';
+                val = String(val).replace(/"/g, '""');
+                if (val.includes(',') || val.includes('\n') || val.includes('"')) {
+                    val = `"${val}"`;
+                }
+                return val;
+            });
+            content += values.join(',') + '\n';
         });
-        csvContent += values.join(',') + '\n';
-    });
+        mimeType = 'text/csv;charset=utf-8;';
+    }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Check if Web Share API is available (ideal for Android/Capacitor file sharing/saving)
+    const file = new File([content], filename, { type: mimeType });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({
+                files: [file],
+                title: 'Every Penny Export',
+                text: `Here is your Every Penny export file (${filename}).`
+            });
+            return;
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.warn('Share API failed, falling back to download link:', err);
+            } else {
+                return; // User cancelled share
+            }
+        }
+    }
+
+    // Fallback for standard browser downloads
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -840,3 +859,29 @@ function render() {
 if (document.getElementById('expenseChart')) {
     render();
 }
+
+// GitHub Releases In-App Update Checker
+window.CURRENT_APP_VERSION = "v1.0.0"; // Update this or sync with package.json
+window.checkForUpdates = async function() {
+    try {
+        const res = await fetch("https://api.github.com/repos/Leleouch14/Every_Penny/releases/latest");
+        if (!res.ok) throw new Error("Failed to fetch latest release from GitHub.");
+        const release = await res.json();
+        const latestVersion = release.tag_name;
+
+        if (latestVersion && latestVersion !== window.CURRENT_APP_VERSION) {
+            // Find APK asset in release if available
+            const apkAsset = release.assets && release.assets.find(a => a.name.endsWith('.apk'));
+            const downloadUrl = apkAsset ? apkAsset.browser_download_url : release.html_url;
+
+            if (confirm(`A new version of Every Penny (${latestVersion}) is available!\n\nRelease Notes:\n${release.name || 'Bug fixes and improvements'}\n\nWould you like to download and update now? (Your data will be preserved).`)) {
+                window.open(downloadUrl, '_blank');
+            }
+        } else {
+            alert(`You are already on the latest version (${window.CURRENT_APP_VERSION}).`);
+        }
+    } catch (err) {
+        console.error("Update check failed:", err);
+        alert("Could not check for updates. Please check your internet connection.");
+    }
+};
