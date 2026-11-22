@@ -861,7 +861,7 @@ if (document.getElementById('expenseChart')) {
 }
 
 // GitHub Releases In-App Update Checker
-window.CURRENT_APP_VERSION = "v1.0.0"; // Update this or sync with package.json
+window.CURRENT_APP_VERSION = "v2.0.3"; // Update this or sync with package.json
 window.checkForUpdates = async function() {
     try {
         const res = await fetch("https://api.github.com/repos/Leleouch14/Every_Penny/releases/latest");
